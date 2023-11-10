@@ -43,10 +43,9 @@ auto TypeWriter() {
 
 using PipeT = std::type_identity<decltype([] {})>;
 
-template <typename T>
-concept AnyPipe = std::derived_from<T, PipeT>;
-
 }  // namespace impl
+
+struct LocalPipeT : impl::PipeT {};
 
 struct UniversalParameter {
   template <auto W = [] {}>
@@ -70,16 +69,8 @@ struct UniversalParameter {
     } else {
       this->value.v = &value;
     }
-    struct LocalPipe : impl::PipeT {
-      explicit LocalPipe(T& value)
-          : value(value) {
-      }
-      operator T&&() {  // NOLINT
-        return std::forward<T>(value);
-      }
-      T value;
-    };
-    return LocalPipe(value);
+
+    return LocalPipeT{};
   }
   union {
     void* v;
@@ -92,8 +83,8 @@ decltype(auto) operator!(UniversalParameter param) {
   return param.Get<W>();
 }
 
-template <impl::AnyPipe T, typename U, auto W = [] {}>
-auto operator||(T&& lhs, U&& rhs) {
+template <typename U, auto W = [] {}>
+auto operator||(LocalPipeT&& lhs, U&& rhs) {
   impl::TypeWriter<U, impl::PipeT, W>();
   if constexpr (std::is_const_v<std::remove_reference_t<U>>) {
     $.value.cv = &rhs;
@@ -101,16 +92,12 @@ auto operator||(T&& lhs, U&& rhs) {
     $.value.v = &rhs;
   }
 
-  struct LocalPipe : impl::PipeT {
-    explicit LocalPipe(U&& value)
-        : value(std::forward<U>(value)) {
-    }
-    operator U&&() {  // NOLINT
-      return std::forward<U>(value);
-    }
-    U value;
-  };
-  return LocalPipe(std::move(rhs));
+  return LocalPipeT{};
+}
+
+template <auto W = [] {}>
+static constexpr auto operator||(LocalPipeT&& lhs, UniversalParameter& rhs) {
+  return rhs.Get<W>();
 }
 
 }  // namespace piped

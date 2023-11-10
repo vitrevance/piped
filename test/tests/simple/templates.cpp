@@ -14,7 +14,7 @@ TEST(templates, Deduction) {
     return arg + 1;
   };
 
-  auto [result] = $[lambda] || DeductionFunc(!$) || lambda(!$);
+  auto result = $[lambda] || DeductionFunc(!$) || lambda(!$) || $;
   EXPECT_EQ(result, 3);
 }
 
@@ -24,6 +24,6 @@ auto DecltypeFunc(std::decay_t<T> value) {
 }
 
 TEST(templates, Decltype) {
-  auto [result] = $["hello"] || DecltypeFunc<decltype(!$)>(!$);
+  auto result = $["hello"] || DecltypeFunc<decltype(!$)>(!$) || $;
   EXPECT_EQ(result, "hello world");
 }

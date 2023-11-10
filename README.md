@@ -13,7 +13,8 @@ Simply include the piped.hpp header file in your C++ project to start using the 
 using piped::$;
 
 int main() {
-    auto [result] = $[5] || (!$ * 2) || (!$ + 3);
+    auto result = $[5] || (!$ * 2) || (!$ + 3) || $; // Pipe into $ at the end to extract result
+    $[5] || (!$ * 2) || (!$ + 3); // Ignore result
     std::cout << result << std::endl; // Output: 13
     return 0;
 }
