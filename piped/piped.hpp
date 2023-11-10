@@ -65,7 +65,7 @@ struct UniversalParameter {
   auto operator[](T&& value) {
     impl::TypeWriter<T, impl::PipeT, W>();
 
-    if constexpr (std::is_const_v<T>) {
+    if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
       this->value.cv = &value;
     } else {
       this->value.v = &value;
