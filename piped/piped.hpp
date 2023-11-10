@@ -5,7 +5,9 @@
 #include <type_traits>
 #include <utility>
 
-namespace piped_impl {
+namespace piped {
+
+namespace impl {
 
 template <typename Scope, int N>
 struct Flag {
@@ -42,19 +44,15 @@ auto TypeWriter() {
 struct PipeT {};
 
 template <typename T>
-concept any_pipe = std::derived_from<T, PipeT>;
+concept AnyPipe = std::derived_from<T, PipeT>;
 
-}  // namespace piped_impl
-
-namespace piped {
+}  // namespace impl
 
 struct UniversalParameter {
   template <auto W = [] {}>
   decltype(auto) Get() {
     using ActualT = typename decltype(Injector(
-        piped_impl::Flag<
-            piped_impl::PipeT,
-            piped_impl::Reader<piped_impl::PipeT, 1, W>()>{}))::type;
+        impl::Flag<impl::PipeT, impl::Reader<impl::PipeT, 1, W>()>{}))::type;
     using PtrT = std::add_pointer_t<std::remove_reference_t<ActualT>>;
     if constexpr (std::is_const_v<std::remove_reference_t<ActualT>>) {
       return std::forward<ActualT>(*reinterpret_cast<PtrT>(value.cv));
@@ -65,14 +63,14 @@ struct UniversalParameter {
 
   template <typename T, auto W = [] {}>
   auto operator[](T&& value) {
-    piped_impl::TypeWriter<T, piped_impl::PipeT, W>();
+    impl::TypeWriter<T, impl::PipeT, W>();
 
     if constexpr (std::is_const_v<T>) {
       this->value.cv = &value;
     } else {
       this->value.v = &value;
     }
-    struct LocalPipe : piped_impl::PipeT {
+    struct LocalPipe : impl::PipeT {
       explicit LocalPipe(T& value)
           : value(value) {
       }
@@ -94,16 +92,16 @@ decltype(auto) operator!(UniversalParameter param) {
   return param.Get<W>();
 }
 
-template <piped_impl::any_pipe T, typename U, auto W = [] {}>
+template <impl::AnyPipe T, typename U, auto W = [] {}>
 auto operator||(T&& lhs, U&& rhs) {
-  piped_impl::TypeWriter<U, piped_impl::PipeT, W>();
+  impl::TypeWriter<U, impl::PipeT, W>();
   if constexpr (std::is_const_v<std::remove_reference_t<U>>) {
     $.value.cv = &rhs;
   } else {
     $.value.v = &rhs;
   }
 
-  struct LocalPipe : piped_impl::PipeT {
+  struct LocalPipe : impl::PipeT {
     explicit LocalPipe(U&& value)
         : value(std::forward<U>(value)) {
     }
