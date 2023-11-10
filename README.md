@@ -11,7 +11,7 @@ Simply include the piped.hpp header file in your C++ project to start using the 
 #include <iostream>
 
 int main() {
-    auto [result] = $[5] | (!$ * 2) | (!$ + 3);
+    auto [result] = $[5] || (!$ * 2) || (!$ + 3);
     std::cout << result << std::endl; // Output: 13
     return 0;
 }
