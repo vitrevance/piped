@@ -41,7 +41,7 @@ auto TypeWriter() {
   }
 }
 
-struct PipeT {};
+using PipeT = std::type_identity<decltype([] {})>;
 
 template <typename T>
 concept AnyPipe = std::derived_from<T, PipeT>;
