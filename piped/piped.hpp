@@ -75,7 +75,7 @@ struct UniversalParameter {
           : value(value) {
       }
       operator T&&() {  // NOLINT
-        return value;
+        return std::forward<T>(value);
       }
       T value;
     };

@@ -7,6 +7,11 @@
 using piped::$;
 
 TEST(simple, Simple) {
+  auto [result] = $[5] || (!$ * 2) || (!$ + 3);
+  EXPECT_EQ(result, 13);
+}
+
+TEST(simple, Ranges) {
   std::vector<int> value = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   auto [result] = $[value] || std::ranges::views::drop(!$, 5)
                   || std::ranges::views::transform(!$,
