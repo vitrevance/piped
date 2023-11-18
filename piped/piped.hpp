@@ -45,7 +45,10 @@ using PipeT = std::type_identity<decltype([] {})>;
 
 }  // namespace impl
 
-struct LocalPipeT : impl::PipeT {};
+using LocalPipeT = decltype([] {
+  struct LocalPipe : impl::PipeT {};
+  return LocalPipe{};
+});
 
 struct UniversalParameter {
   template <auto W = [] {}>
