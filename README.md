@@ -22,7 +22,7 @@ int main() {
 
 For more examples, see tests.
 
-## Cache Coherence
+## Cache Consistency
 
 This version of the library relies on GCC 13.2 optimizations to eliminate unnecessary access to global variables.
 ### Assembly comparison
