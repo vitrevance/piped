@@ -5,6 +5,13 @@
 #include <type_traits>
 #include <utility>
 
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-template-friend"
+#else
+#warning This version of the Piped library is for GCC
+#endif
+
 namespace piped {
 
 namespace impl {
@@ -45,64 +52,65 @@ using PipeT = std::type_identity<decltype([] {})>;
 
 }  // namespace impl
 
-using LocalPipeT = decltype([] {
-  struct LocalPipe : impl::PipeT {};
-  return LocalPipe{};
-});
-
 struct UniversalParameter {
   template <auto W = [] {}>
-  decltype(auto) Get() {
+  decltype(auto) Get() const {
     using ActualT = typename decltype(Injector(
         impl::Flag<impl::PipeT, impl::Reader<impl::PipeT, 1, W>()>{}))::type;
-    using PtrT = std::add_pointer_t<std::remove_reference_t<ActualT>>;
-    if constexpr (std::is_const_v<std::remove_reference_t<ActualT>>) {
-      return std::forward<ActualT>(*reinterpret_cast<PtrT>(value.cv));
-    } else {
-      return std::forward<ActualT>(*reinterpret_cast<PtrT>(value.v));
-    }
+    using PtrT = decltype(ActualT{}.template operator()<void*>(
+        nullptr, std::declval<void*&>()))::type;
+    auto extract = []() -> PtrT&& {
+      std::remove_reference_t<PtrT>* place;
+      ActualT{}(nullptr, place);
+      return static_cast<PtrT&&>(*place);
+    };
+    return extract();
   }
 
   template <typename T, auto W = [] {}>
-  auto operator[](T&& value) {
-    impl::TypeWriter<T, impl::PipeT, W>();
-
-    if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
-      this->value.cv = &value;
-    } else {
-      this->value.v = &value;
-    }
-
-    return LocalPipeT{};
+  auto operator[](T&& value) const {
+    using PureT = std::remove_reference_t<T>;
+    auto l = []<typename LT = PureT*>(PureT * in_val,
+                                      std::type_identity<LT>::type & out_val)
+                 ->std::type_identity<T> {
+      if constexpr (std::same_as<LT, PureT*>) {
+        static PureT* static_ptr = nullptr;
+        out_val = static_ptr;
+        static_ptr = in_val;
+      }
+      return {};
+    };
+    impl::TypeWriter<decltype(l), impl::PipeT, W>();
+    PureT* ptr = nullptr;
+    l(&value, ptr);
+    return impl::PipeT{};
   }
-  union {
-    void* v;
-    const void* cv;
-  } value{nullptr};
-} inline thread_local $;
+} constexpr $;
 
 template <auto W = [] {}>
 decltype(auto) operator!(UniversalParameter param) {
   return param.Get<W>();
 }
 
-template <typename U, auto W = [] {}>
-auto operator||(LocalPipeT&& lhs, U&& rhs) {
-  impl::TypeWriter<U, impl::PipeT, W>();
-  if constexpr (std::is_const_v<std::remove_reference_t<U>>) {
-    $.value.cv = &rhs;
-  } else {
-    $.value.v = &rhs;
-  }
+namespace impl {
 
-  return LocalPipeT{};
+template <typename U, auto W = [] {}>
+auto operator||(impl::PipeT&& lhs, U&& rhs) {
+  return $.operator[]<U, W>(std::forward<U>(rhs));
 }
 
 template <auto W = [] {}>
-static constexpr auto operator||(LocalPipeT&& lhs, UniversalParameter& rhs) {
+static constexpr decltype(auto) operator||(impl::PipeT&& lhs,
+                                           const UniversalParameter& rhs) {
   return rhs.Get<W>();
 }
 
+}  // namespace impl
+
 }  // namespace piped
+
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 #endif  // PIPED_HPP
