@@ -23,4 +23,5 @@ int main() {
 For more examples, see tests.
 
 ## Reference
-For more information on the Circle compiler, visit [Circle Lang](https://www.circle-lang.org/).
+- For more information on the Circle compiler, visit [Circle Lang](https://www.circle-lang.org/).
+- See [cache consistent version](https://github.com/vitrevance/piped/tree/consistent) of Piped
